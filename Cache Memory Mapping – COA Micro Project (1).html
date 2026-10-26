@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Cache Memory Mapping – COA Micro Project</title>
+<style>
+:root{--bg:#f4f6fb;--card:#fff;--text:#1d2433;--muted:#5a6475;--brand:#1f3a6e;--accent:#2d4f95;--line:#c9d0e0;--soft:#eef1fa;--hit:#c8f0c8;--miss:#f6c8c8;--tip:#fff6d6;--tipb:#e0a800;--btn:#e6ebfb;--err:#b00020;--bad:#a30000;--ok:#146c14;
+box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#10141f;--card:#192033;--text:#e8ecf7;--muted:#a3adc2;--brand:#9db8ff;--accent:#3b5fb8;--line:#33405e;--soft:#222c45;--hit:#1d5a2a;--miss:#6a2626;--tip:#3a3217;--btn:#26325a;--err:#ff8a9a;--bad:#ff9a9a;--ok:#7be08b}}
+:root[data-theme="dark"]{--bg:#10141f;--card:#192033;--text:#e8ecf7;--muted:#a3adc2;--brand:#9db8ff;--accent:#3b5fb8;--line:#33405e;--soft:#222c45;--hit:#1d5a2a;--miss:#6a2626;--tip:#3a3217;--btn:#26325a;--err:#ff8a9a;--bad:#ff9a9a;--ok:#7be08b}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+body{margin:0;font-family:system-ui,Arial,sans-serif;background:var(--bg);color:var(--text);line-height:1.55}
+header{background:var(--accent);color:#fff;padding:20px 16px;text-align:center}
+header h1{margin:0;font-size:24px}header p{margin:6px 0 0;font-size:14px;opacity:.9}
+nav{text-align:center;padding:10px;font-size:14px}
+nav a{color:var(--brand);margin:0 8px;text-decoration:none;font-weight:600}
+main{max-width:860px;margin:0 auto;padding:0 12px 20px}
+section{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:14px 18px;margin:14px 0}
+h2{margin:0 0 8px;color:var(--brand);font-size:20px}h3{margin:12px 0 4px;font-size:16px}
+.tip{background:var(--tip);border-left:4px solid var(--tipb);padding:6px 10px;font-size:14px;border-radius:4px}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:10px}
+.cardx{background:var(--soft);border-radius:8px;padding:10px 12px;font-size:14px}
+.ctl{background:var(--soft);border-radius:8px;padding:8px 10px;margin:8px 0}
+label{display:inline-block;margin:3px 10px 3px 0;font-size:14px}
+input,select{padding:4px;font-size:14px;background:var(--card);color:var(--text);border:1px solid var(--line);border-radius:4px}
+input[type=text]{width:min(100%,260px)}
+button{padding:6px 14px;margin:3px 4px 3px 0;cursor:pointer;border:1px solid var(--line);background:var(--btn);color:var(--text);border-radius:6px;font-size:14px}
+.scroll{overflow-x:auto}
+table{border-collapse:collapse;font-size:14px;margin:8px 0}
+th,td{border:1px solid var(--line);padding:4px 9px;text-align:center}
+th{background:var(--soft)}
+.hit{background:var(--hit)}.miss{background:var(--miss)}.now{outline:3px solid var(--accent)}
+.err{color:var(--err)}
+details{margin:6px 0;font-size:14px}summary{cursor:pointer;font-weight:600}
+footer{text-align:center;font-size:13px;color:var(--muted);padding:12px}
+</style>
+</head>
+<body>
+<header>
+  <h1>Cache Memory Mapping</h1>
+  <p>Computer Organization and Architecture · CO5 Micro Project</p>
+</header>
+<nav><a href="#what">What is cache?</a><a href="#types">3 mapping types</a><a href="#formulas">Formulas</a><a href="#sim">Simulator</a><a href="#check">Quick check</a></nav>
+
+<main>
+<section id="what">
+  <h2>What is a cache?</h2>
+  <p>Main memory is big but slow. The CPU keeps a small, fast copy of recently used data in the <b>cache</b>. Memory is split into <b>blocks</b>, and the cache has <b>lines</b> that each hold one block.</p>
+  <div class="grid">
+    <div class="cardx"><b>Hit</b><br>The data is already in the cache. Fast.</div>
+    <div class="cardx"><b>Miss</b><br>The data is not in the cache, so it is loaded from memory. Slow.</div>
+    <div class="cardx"><b>Hit ratio</b><br>hits ÷ total accesses</div>
+  </div>
+  <p class="tip">Think of your desk (cache) and a library (main memory). Books already on the desk are a hit. Walking to the library is a miss.</p>
+</section>
+
+<section id="types">
+  <h2>Three ways to map a block</h2>
+  <p>Mapping decides <b>which cache line</b> a memory block is allowed to use.</p>
+  <div class="grid">
+    <div class="cardx"><b>Direct</b><br>Each block has exactly one possible line.<br>✔ Simple and fast<br>✘ Many clashes</div>
+    <div class="cardx"><b>Associative</b><br>A block can go in any line.<br>✔ Fewest clashes<br>✘ Costly to search</div>
+    <div class="cardx"><b>Set-associative</b><br>A block goes into one fixed set and can use any line (way) inside it.<br>✔ Balanced middle option</div>
+  </div>
+  <h3>When a set is full</h3>
+  <p>A <b>replacement policy</b> chooses the victim. <b>FIFO</b> removes the oldest block. <b>LRU</b> removes the block unused for the longest time.</p>
+</section>
+
+<section id="formulas">
+  <h2>The only formulas you need</h2>
+  <table>
+    <tr><th>Name</th><th>Formula</th></tr>
+    <tr><td>Block number</td><td>address ÷ block size</td></tr>
+    <tr><td>Set (line for direct)</td><td>block number mod number of sets</td></tr>
+    <tr><td>Tag</td><td>block number ÷ number of sets</td></tr>
+  </table>
+  <p>Direct: sets = lines. Associative: sets = 1. Set-associative: sets = lines ÷ ways.</p>
+</section>
+
+<section id="sim">
+  <h2>Try it: cache simulator</h2>
+  <p>Change the settings, enter addresses, then press <b>Next step</b> to see one access at a time. Green is a hit, red is a miss.</p>
+  <div class="ctl">
+    <label>Mapping: <select id="type"><option value="direct">Direct</option><option value="full">Associative</option><option value="set">Set-associative</option></select></label>
+    <label>Cache lines: <select id="lines"><option>4</option><option selected>8</option><option>16</option></select></label>
+    <label>Block size: <select id="block"><option>1</option><option selected>4</option><option>8</option></select></label>
+    <label>Ways (set-assoc): <select id="ways"><option>2</option><option>4</option></select></label>
+    <label>Replacement: <select id="pol"><option>LRU</option><option>FIFO</option></select></label><br>
+    <label>Addresses: <input type="text" id="addr" value="0, 4, 8, 0, 32, 64, 4, 96, 0, 32"></label>
+    <button onclick="reset()">Load / Reset</button><button onclick="step()">Next step</button><button onclick="runAll()">Run all</button>
+    <div class="err" id="err"></div>
+  </div>
+  <p id="msg"></p>
+  <div class="scroll" id="view"></div>
+  <div class="scroll"><table id="log"><thead><tr><th>#</th><th>Address</th><th>Block</th><th>Set</th><th>Tag</th><th>Result</th></tr></thead><tbody></tbody></table></div>
+</section>
+
+<section id="check">
+  <h2>Quick check</h2>
+  <details><summary>Why do addresses 0 and 16 keep missing in a 4-line direct cache (block size 4)?</summary>Both are in blocks that map to line 0 (block 0 and block 4, 4 mod 4 = 0), so each one replaces the other every time.</details>
+  <details><summary>Which mapping has the fewest misses, and what is the cost?</summary>Associative mapping, because a block can go anywhere. The cost is that the hardware must search every line.</details>
+  <details><summary>What is the tag for?</summary>Many blocks share one line, so the tag tells which block is currently stored there.</details>
+</section>
+</main>
+<footer>Name: Navdisha · Roll no.: 1079</footer>
+
+<script>
+function $(id){return document.getElementById(id);}
+var C=[],S=1,W=1,L=[],P=0,H=0,M=0,T=0,B=1,ls=-1,lw=-1,lh=false;
+
+function reset(){
+  $("err").textContent="";
+  var type=$("type").value,lines=parseInt($("lines").value);B=parseInt($("block").value);
+  var parts=$("addr").value.split(",");L=[];
+  for(var i=0;i<parts.length;i++){
+    var t=parts[i].trim();if(t==="")continue;
+    var n=Number(t);
+    if(!Number.isInteger(n)||n<0){$("err").textContent="Invalid address: "+t+". Use whole numbers, 0 or more.";return false;}
+    L.push(n);
+  }
+  if(L.length===0){$("err").textContent="Please enter at least one address.";return false;}
+  if(type==="direct"){W=1;S=lines;}
+  else if(type==="full"){W=lines;S=1;}
+  else{W=parseInt($("ways").value);if(W>lines){$("err").textContent="Ways cannot be more than cache lines.";return false;}S=lines/W;}
+  C=[];
+  for(var s=0;s<S;s++){C.push([]);for(var w=0;w<W;w++)C[s].push({v:0,tag:0,blk:0,ins:0,used:0});}
+  P=0;H=0;M=0;T=0;ls=-1;lw=-1;
+  document.querySelector("#log tbody").innerHTML="";
+  $("msg").innerHTML="Cache is empty: "+S+" set(s) × "+W+" way(s). Press <b>Next step</b>.";
+  draw();return true;
+}
+
+function step(){
+  if(C.length===0&&!reset())return;
+  if(P>=L.length){$("msg").innerHTML="<b>All addresses done.</b> Change the settings and press Load / Reset to try again.";return;}
+  var a=L[P],pol=$("pol").value;
+  var blk=Math.floor(a/B),s=blk%S,tag=Math.floor(blk/S);
+  T++;
+  var row=C[s],f=-1,i;
+  for(i=0;i<W;i++)if(row[i].v&&row[i].tag===tag){f=i;break;}
+  var t="Address <b>"+a+"</b>: block = "+blk+", set = "+blk+" mod "+S+" = <b>"+s+"</b>, tag = <b>"+tag+"</b>. ";
+  if(f>=0){H++;lh=true;lw=f;row[f].used=T;t+="Tag found, so it is a <b style='color:var(--ok)'>HIT</b>.";}
+  else{
+    M++;lh=false;
+    var v=-1;
+    for(i=0;i<W;i++)if(!row[i].v){v=i;break;}
+    if(v>=0)t+="Tag not found, so it is a <b style='color:var(--bad)'>MISS</b>. The block is loaded into empty way "+v+".";
+    else{
+      v=0;
+      for(i=1;i<W;i++){if(pol==="LRU"?row[i].used<row[v].used:row[i].ins<row[v].ins)v=i;}
+      t+="<b style='color:var(--bad)'>MISS</b> and the set is full. "+pol+" replaces way "+v+" (old block "+row[v].blk+").";
+    }
+    row[v]={v:1,tag:tag,blk:blk,ins:T,used:T};lw=v;
+  }
+  ls=s;
+  var tr=document.createElement("tr");tr.className=lh?"hit":"miss";
+  tr.innerHTML="<td>"+(P+1)+"</td><td>"+a+"</td><td>"+blk+"</td><td>"+s+"</td><td>"+tag+"</td><td>"+(lh?"HIT":"MISS")+"</td>";
+  document.querySelector("#log tbody").appendChild(tr);
+  P++;
+  $("msg").innerHTML="<b>Step "+P+" of "+L.length+":</b> "+t;
+  draw();
+}
+
+function runAll(){
+  if(C.length===0||P>=L.length){if(!reset())return;}
+  while(P<L.length)step();
+}
+
+function draw(){
+  var h="<table><tr><th>Set</th>";
+  for(var w=0;w<W;w++)h+="<th>Way "+w+" (V | Tag | Block)</th>";
+  h+="</tr>";
+  for(var s=0;s<S;s++){
+    h+="<tr><th>"+s+"</th>";
+    for(var x=0;x<W;x++){
+      var c=C[s][x],cl=(s===ls&&x===lw)?(lh?"hit now":"miss now"):"";
+      h+="<td class='"+cl+"'>"+(c.v?"1 | "+c.tag+" | B"+c.blk:"0 | - | -")+"</td>";
+    }
+    h+="</tr>";
+  }
+  var tot=H+M;
+  $("view").innerHTML=h+"</table>Hits: <b>"+H+"</b> · Misses: <b>"+M+"</b> · Hit ratio: <b>"+(tot?(H/tot*100).toFixed(1):0)+"%</b>";
+}
+reset();
+</script>
+</body>
+</html>
